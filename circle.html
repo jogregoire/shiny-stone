@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Click to Draw Circle</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars if circles go off-screen */
+            cursor: crosshair; /* Changes cursor to a crosshair */
+        }
+        .circle {
+            position: absolute; /* Allows positioning relative to the body */
+            width: 50px; /* Adjust circle size as desired */
+            height: 50px;
+            background-color: dodgerblue; /* Circle color */
+            border-radius: 50%; /* Makes the div a circle */
+            transform: translate(-50%, -50%); /* Centers the circle on the click point */
+            pointer-events: none; /* Allows clicks to go through the circle to the body */
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Click anywhere to draw a circle!</h1>
+    <p>The circles will appear where your mouse pointer is when you click.</p>
+
+    <script>
+        const body = document.body;
+        body.addEventListener('click', function(event) {
+            const circle = document.createElement('div');
+            circle.classList.add('circle');
+            circle.style.left = event.clientX + 'px';
+            circle.style.top = event.clientY + 'px';
+            body.appendChild(circle);
+        });
+    </script>
+
+</body>
+</html>
