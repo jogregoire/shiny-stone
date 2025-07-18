@@ -245,9 +245,9 @@
                 this.gameArea.addEventListener('mouseup', (e) => this.handleMouseUp(e));
                 this.gameArea.addEventListener('mouseleave', (e) => this.handleMouseUp(e));
 
-                // Prevent default touch behaviors on mobile
-                document.addEventListener('touchstart', (e) => e.preventDefault(), {passive: false});
-                document.addEventListener('touchmove', (e) => e.preventDefault(), {passive: false});
+                // Prevent default touch behaviors only on the game area
+                this.gameArea.addEventListener('touchstart', (e) => e.preventDefault(), {passive: false});
+                this.gameArea.addEventListener('touchmove', (e) => e.preventDefault(), {passive: false});
             }
 
             startGame() {
