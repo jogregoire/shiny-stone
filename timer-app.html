@@ -587,8 +587,9 @@ function deleteScore(index, stayOnLeaderboard) {
     localStorage.setItem('timer-scores', JSON.stringify(scores));
     updateLeaderboardDisplay();
     if (scores.length === 0) {
-        leaderboardEl.style.display = 'none';
-        statusEl.textContent = 'All scores deleted. Press anywhere to start timing!';
+        leaderboardEl.style.display = 'block'; // Keep leaderboard visible
+        timerEl.style.display = 'none';
+        statusEl.textContent = 'All scores deleted.';
         statusEl.style.color = '#555555';
     } else if (stayOnLeaderboard) {
         leaderboardEl.style.display = 'block';
