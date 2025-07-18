@@ -212,6 +212,8 @@
                 this.gameActive = false;
                 this.eliminating = false;
                 this.playersToSelect = 1;
+                this.eliminationTimeout = null;
+                this.hasShownReadyMessage = false;
                 
                 this.colors = [
                     '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', 
@@ -274,6 +276,9 @@
 
                 this.touches.set(mouseId, {x, y});
                 this.createLight(mouseId, x, y);
+                
+                // Check if we have enough players to start elimination
+                this.checkForElimination();
             }
 
             handleMouseMove(e) {
@@ -294,6 +299,8 @@
                 
                 const mouseId = -1;
                 this.removeTouch(mouseId);
+                
+                // Don't start elimination when mouse is released
             }
 
             handleTouchStart(e) {
@@ -307,6 +314,9 @@
                     this.touches.set(touchId, {x, y});
                     this.createLight(touchId, x, y);
                 }
+                
+                // Check if we have enough players to start elimination
+                this.checkForElimination();
             }
 
             handleTouchMove(e) {
@@ -332,12 +342,8 @@
                     this.removeTouch(touchId);
                 }
 
-                // Check if we should start elimination
-                if (this.touches.size >= 2 && !this.eliminating) {
-                    setTimeout(() => {
-                        this.startElimination();
-                    }, 1000);
-                }
+                // Don't start elimination when fingers are lifted
+                // Wait for user to manually trigger elimination
             }
 
             createLight(touchId, x, y) {
@@ -374,6 +380,21 @@
                 if (light) {
                     light.remove();
                     this.lights.delete(touchId);
+                }
+            }
+
+            checkForElimination() {
+                // Only start elimination if we have at least 2 players and someone hasn't started elimination yet
+                if (this.touches.size >= 2 && !this.eliminating && !this.eliminationTimeout) {
+                    if (!this.hasShownReadyMessage) {
+                        this.showMessage("Ready! Keep holding...", 1000);
+                        this.hasShownReadyMessage = true;
+                    }
+                    
+                    // Start elimination after a delay
+                    this.eliminationTimeout = setTimeout(() => {
+                        this.startElimination();
+                    }, 2000); // 2 second delay after ready message
                 }
             }
 
@@ -426,6 +447,11 @@
             resetGame() {
                 this.gameActive = false;
                 this.eliminating = false;
+                this.hasShownReadyMessage = false;
+                if (this.eliminationTimeout) {
+                    clearTimeout(this.eliminationTimeout);
+                    this.eliminationTimeout = null;
+                }
                 
                 // Clear all lights
                 this.lights.forEach(light => light.remove());
