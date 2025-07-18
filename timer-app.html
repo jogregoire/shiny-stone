@@ -66,20 +66,22 @@
         /* Leaderboard container */
         #leaderboard {
             display: none;
-            width: 90%;
-            max-width: 500px;
+            width: 85%;
+            max-width: 400px;
             background: white;
             border-radius: 10px;
-            padding: 20px;
+            padding: 15px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            margin-top: 20px;
+            margin-top: 15px;
+            max-height: 60vh;
+            overflow-y: auto;
         }
 
         #leaderboard h2 {
             color: #333366;
             text-align: center;
-            margin-bottom: 20px;
-            font-size: 4vw;
+            margin-bottom: 15px;
+            font-size: 1vw;
         }
 
         /* Individual score entries */
@@ -88,10 +90,10 @@
             justify-content: space-between;
             align-items: center;
             background: #f0f8ff;
-            padding: 15px;
-            margin: 10px 0;
+            padding: 10px;
+            margin: 8px 0;
             border-radius: 5px;
-            font-size: 3vw;
+            font-size: 1vw;
             color: #333366;
         }
 
@@ -104,10 +106,10 @@
             background: #ff4444;
             color: white;
             border: none;
-            padding: 8px 12px;
-            border-radius: 5px;
+            padding: 6px 10px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 2.5vw;
+            font-size: 1vw;
             transition: background 0.3s;
         }
 
@@ -135,15 +137,17 @@
             }
             
             #leaderboard h2 {
-                font-size: 5vw;
-            }
-            
-            .score-entry {
                 font-size: 4vw;
             }
             
+            .score-entry {
+                font-size: 3vw;
+                padding: 8px;
+            }
+            
             .delete-btn {
-                font-size: 3.5vw;
+                font-size: 2.5vw;
+                padding: 4px 8px;
             }
             
             #status {
@@ -165,13 +169,13 @@
             }
             
             .score-entry {
-                font-size: 3vh;
-                padding: 10px;
+                font-size: 2.5vh;
+                padding: 8px;
             }
             
             .delete-btn {
-                font-size: 2.5vh;
-                padding: 6px 10px;
+                font-size: 2vh;
+                padding: 4px 8px;
             }
         }
     </style>
@@ -557,29 +561,42 @@
             scores.forEach((score, index) => {
                 const scoreEntry = document.createElement('div');
                 scoreEntry.className = 'score-entry';
-                
                 const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏅';
-                
-                scoreEntry.innerHTML = `
-                    <span>${medal} ${index + 1}. ${score.toFixed(3)}s</span>
-                    <button class="delete-btn" onclick="deleteScore(${index})">Delete</button>
-                `;
-                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.textContent = 'Delete';
+                let deleteDebounce = false;
+                deleteBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (deleteDebounce) return;
+                    deleteDebounce = true;
+                    setTimeout(() => { deleteDebounce = false; }, 300);
+                    deleteScore(index, true);
+                });
+                const scoreSpan = document.createElement('span');
+                scoreSpan.textContent = `${medal} ${index + 1}. ${score.toFixed(3)}s`;
+                scoreEntry.appendChild(scoreSpan);
+                scoreEntry.appendChild(deleteBtn);
                 scoresContainer.appendChild(scoreEntry);
             });
         }
 
-        function deleteScore(index) {
-            scores.splice(index, 1);
-            localStorage.setItem('timer-scores', JSON.stringify(scores));
-            updateLeaderboardDisplay();
-            
-            if (scores.length === 0) {
-                leaderboardEl.style.display = 'none';
-                statusEl.textContent = 'All scores deleted. Press anywhere to start timing!';
-                statusEl.style.color = '#555555';
-            }
-        }
+function deleteScore(index, stayOnLeaderboard) {
+    scores.splice(index, 1);
+    localStorage.setItem('timer-scores', JSON.stringify(scores));
+    updateLeaderboardDisplay();
+    if (scores.length === 0) {
+        leaderboardEl.style.display = 'none';
+        statusEl.textContent = 'All scores deleted. Press anywhere to start timing!';
+        statusEl.style.color = '#555555';
+    } else if (stayOnLeaderboard) {
+        leaderboardEl.style.display = 'block';
+        timerEl.style.display = 'none';
+        statusEl.textContent = 'Press anywhere to start a new timer';
+        statusEl.style.color = '#555555';
+    }
+}
 
         // Show leaderboard on page load if there are scores
         if (scores.length > 0) {
