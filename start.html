@@ -41,28 +41,6 @@
             color: #fff;
         }
 
-        .player-selector {
-            margin: 10px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .player-selector label {
-            font-size: 16px;
-            color: #ccc;
-        }
-
-        .player-selector select {
-            padding: 8px 12px;
-            border: none;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 16px;
-            outline: none;
-        }
-
         .start-btn {
             background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
             color: white;
@@ -182,16 +160,6 @@
 <body>
     <div class="controls" id="controls">
         <h1>Who Goes First?</h1>
-        <div class="player-selector">
-            <label for="playerCount">Players to select:</label>
-            <select id="playerCount">
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-            </select>
-        </div>
         <button class="start-btn" id="startBtn">Start Game</button>
     </div>
 
@@ -200,8 +168,7 @@
     <div class="game-status" id="gameStatus"></div>
 
     <div class="instructions" id="instructions">
-        Place your phone on a flat surface and have everyone put one finger on the screen<br>
-        <small>(On desktop: Click and hold with mouse to test)</small>
+        Place your phone on a flat surface and have everyone put one finger on the screen
     </div>
 
     <script>
@@ -211,7 +178,7 @@
                 this.lights = new Map();
                 this.gameActive = false;
                 this.eliminating = false;
-                this.playersToSelect = 1;
+                this.playersToSelect = 1; // Always select 1 player
                 this.eliminationTimeout = null;
                 this.hasShownReadyMessage = false;
                 
@@ -228,26 +195,16 @@
                 this.gameArea = document.getElementById('gameArea');
                 this.controls = document.getElementById('controls');
                 this.startBtn = document.getElementById('startBtn');
-                this.playerCountSelect = document.getElementById('playerCount');
                 this.gameStatus = document.getElementById('gameStatus');
                 this.instructions = document.getElementById('instructions');
 
                 this.startBtn.addEventListener('click', () => this.startGame());
-                this.playerCountSelect.addEventListener('change', (e) => {
-                    this.playersToSelect = parseInt(e.target.value);
-                });
 
                 // Touch events for mobile
                 this.gameArea.addEventListener('touchstart', (e) => this.handleTouchStart(e));
                 this.gameArea.addEventListener('touchmove', (e) => this.handleTouchMove(e));
                 this.gameArea.addEventListener('touchend', (e) => this.handleTouchEnd(e));
                 this.gameArea.addEventListener('touchcancel', (e) => this.handleTouchEnd(e));
-
-                // Mouse events for desktop testing
-                this.gameArea.addEventListener('mousedown', (e) => this.handleMouseDown(e));
-                this.gameArea.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-                this.gameArea.addEventListener('mouseup', (e) => this.handleMouseUp(e));
-                this.gameArea.addEventListener('mouseleave', (e) => this.handleMouseUp(e));
 
                 // Prevent default touch behaviors only on the game area
                 this.gameArea.addEventListener('touchstart', (e) => e.preventDefault(), {passive: false});
@@ -263,44 +220,6 @@
                 setTimeout(() => {
                     this.gameStatus.classList.remove('visible');
                 }, 3000);
-            }
-
-            // Mouse event handlers for desktop testing
-            handleMouseDown(e) {
-                if (!this.gameActive || this.eliminating) return;
-                
-                // Use a fake touch ID for mouse (negative to avoid conflicts)
-                const mouseId = -1;
-                const x = e.clientX;
-                const y = e.clientY;
-
-                this.touches.set(mouseId, {x, y});
-                this.createLight(mouseId, x, y);
-                
-                // Check if we have enough players to start elimination
-                this.checkForElimination();
-            }
-
-            handleMouseMove(e) {
-                if (!this.gameActive || this.eliminating) return;
-                
-                const mouseId = -1;
-                if (this.touches.has(mouseId)) {
-                    const x = e.clientX;
-                    const y = e.clientY;
-                    
-                    this.touches.set(mouseId, {x, y});
-                    this.updateLight(mouseId, x, y);
-                }
-            }
-
-            handleMouseUp(e) {
-                if (!this.gameActive || this.eliminating) return;
-                
-                const mouseId = -1;
-                this.removeTouch(mouseId);
-                
-                // Don't start elimination when mouse is released
             }
 
             handleTouchStart(e) {
@@ -436,7 +355,7 @@
                     }
                 });
                 
-                this.gameStatus.textContent = winners.length === 1 ? 'Winner!' : 'Winners!';
+                this.gameStatus.textContent = 'Winner!';
                 this.gameStatus.classList.add('visible');
                 
                 setTimeout(() => {
