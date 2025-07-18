@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Timer App</title>
+    <style>
+        /* Universal styles that work on all devices and orientations */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff; /* Light blue background */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            user-select: none; /* Prevent text selection */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        /* Main timer display - large and centered */
+        #timer {
+            font-size: 8vw; /* Responsive font size using viewport width */
+            color: dodgerblue;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            display: none; /* Hidden initially */
+            min-height: 20vh; /* Ensure consistent height */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Instructions text */
+        #instructions {
+            font-size: 3vw;
+            color: #333366;
+            text-align: center;
+            margin: 20px;
+            padding: 20px;
+            max-width: 80%;
+            line-height: 1.5;
+        }
+
+        /* Leaderboard container */
+        #leaderboard {
+            display: none;
+            width: 90%;
+            max-width: 500px;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+
+        #leaderboard h2 {
+            color: #333366;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 4vw;
+        }
+
+        /* Individual score entries */
+        .score-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f0f8ff;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 3vw;
+            color: #333366;
+        }
+
+        .score-entry span {
+            font-weight: bold;
+        }
+
+        /* Delete button for each score */
+        .delete-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 2.5vw;
+            transition: background 0.3s;
+        }
+
+        .delete-btn:hover {
+            background: #cc0000;
+        }
+
+        /* Status message */
+        #status {
+            font-size: 3vw;
+            color: #555555;
+            text-align: center;
+            margin: 20px;
+            font-weight: bold;
+        }
+
+        /* Responsive adjustments for different screen sizes */
+        @media (max-width: 768px) {
+            #timer {
+                font-size: 12vw;
+            }
+            
+            #instructions {
+                font-size: 4vw;
+            }
+            
+            #leaderboard h2 {
+                font-size: 5vw;
+            }
+            
+            .score-entry {
+                font-size: 4vw;
+            }
+            
+            .delete-btn {
+                font-size: 3.5vw;
+            }
+            
+            #status {
+                font-size: 4vw;
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 500px) {
+            #timer {
+                font-size: 10vh;
+            }
+            
+            #instructions {
+                font-size: 3vh;
+            }
+            
+            #leaderboard h2 {
+                font-size: 4vh;
+            }
+            
+            .score-entry {
+                font-size: 3vh;
+                padding: 10px;
+            }
+            
+            .delete-btn {
+                font-size: 2.5vh;
+                padding: 6px 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Instructions shown initially -->
+    <div id="instructions">
+        <h1 style="color: dodgerblue; margin-bottom: 20px;">Universal Timer App</h1>
+        <p><strong>Press and hold</strong> anywhere on the screen to prepare the timer</p>
+        <p><strong>Release</strong> to start timing</p>
+        <p><strong>Press again</strong> to stop and save your time</p>
+        <p>Works on PC (mouse) and mobile (touch) in any orientation!</p>
+    </div>
+
+    <!-- Timer display -->
+    <div id="timer">0.000s</div>
+
+    <!-- Status message -->
+    <div id="status"></div>
+
+    <!-- Leaderboard -->
+    <div id="leaderboard">
+        <h2>🏆 Top 5 Times</h2>
+        <div id="scores-container"></div>
+    </div>
+
+    <script>
+        // Timer state management
+        let timerState = 'idle'; // 'idle', 'ready', 'running', 'stopped'
+        let startTime = 0;
+        let timerInterval = null;
+        let scores = JSON.parse(localStorage.getItem('timer-scores') || '[]');
+        
+        // DOM elements
+        const timerEl = document.getElementById('timer');
+        const statusEl = document.getElementById('status');
+        const instructionsEl = document.getElementById('instructions');
+        const leaderboardEl = document.getElementById('leaderboard');
+        const scoresContainer = document.getElementById('scores-container');
+
+        // Universal input handling - works for both mouse and touch
+        let isPressed = false;
+
+        // Mouse events (PC)
+        document.addEventListener('mousedown', handlePressStart);
+        document.addEventListener('mouseup', handlePressEnd);
+
+        // Touch events (Mobile)
+        document.addEventListener('touchstart', handlePressStart);
+        document.addEventListener('touchend', handlePressEnd);
+
+        // Prevent context menu on long press
+        document.addEventListener('contextmenu', e => e.preventDefault());
+
+        function handlePressStart(event) {
+            event.preventDefault();
+            
+            if (isPressed) return; // Prevent multiple triggers
+            isPressed = true;
+
+            if (timerState === 'idle') {
+                // First press - prepare timer
+                timerState = 'ready';
+                instructionsEl.style.display = 'none';
+                leaderboardEl.style.display = 'none';
+                timerEl.style.display = 'flex';
+                timerEl.textContent = '0.000s';
+                statusEl.textContent = 'Release to start timing...';
+                statusEl.style.color = 'dodgerblue';
+            } else if (timerState === 'running') {
+                // Second press - stop timer
+                stopTimer();
+            }
+        }
+
+        function handlePressEnd(event) {
+            event.preventDefault();
+            
+            if (!isPressed) return;
+            isPressed = false;
+
+            if (timerState === 'ready') {
+                // Release after first press - start timer
+                startTimer();
+            }
+        }
+
+        function startTimer() {
+            timerState = 'running';
+            startTime = Date.now();
+            statusEl.textContent = 'Press anywhere to stop...';
+            statusEl.style.color = '#333366';
+            
+            // Update timer display every 10ms for smooth animation
+            timerInterval = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                timerEl.textContent = elapsed.toFixed(3) + 's';
+            }, 10);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            const finalTime = (Date.now() - startTime) / 1000;
+            timerEl.textContent = finalTime.toFixed(3) + 's';
+            
+            // Save score
+            saveScore(finalTime);
+            
+            timerState = 'stopped';
+            statusEl.textContent = `Time saved: ${finalTime.toFixed(3)}s - Press anywhere to start again`;
+            statusEl.style.color = 'green';
+            
+            // Show leaderboard after a short delay
+            setTimeout(() => {
+                showLeaderboard();
+                timerState = 'idle';
+            }, 1500);
+        }
+
+        function saveScore(time) {
+            scores.push(time);
+            // Sort scores (best times first)
+            scores.sort((a, b) => a - b);
+            // Keep only top 5
+            scores = scores.slice(0, 5);
+            // Save to localStorage
+            localStorage.setItem('timer-scores', JSON.stringify(scores));
+        }
+
+        function showLeaderboard() {
+            if (scores.length === 0) {
+                statusEl.textContent = 'No scores yet. Press anywhere to start timing!';
+                statusEl.style.color = '#555555';
+                return;
+            }
+
+            updateLeaderboardDisplay();
+            leaderboardEl.style.display = 'block';
+            timerEl.style.display = 'none';
+            statusEl.textContent = 'Press anywhere to start a new timer';
+            statusEl.style.color = '#555555';
+        }
+
+        function updateLeaderboardDisplay() {
+            scoresContainer.innerHTML = '';
+            
+            scores.forEach((score, index) => {
+                const scoreEntry = document.createElement('div');
+                scoreEntry.className = 'score-entry';
+                
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏅';
+                
+                scoreEntry.innerHTML = `
+                    <span>${medal} ${index + 1}. ${score.toFixed(3)}s</span>
+                    <button class="delete-btn" onclick="deleteScore(${index})">Delete</button>
+                `;
+                
+                scoresContainer.appendChild(scoreEntry);
+            });
+        }
+
+        function deleteScore(index) {
+            scores.splice(index, 1);
+            localStorage.setItem('timer-scores', JSON.stringify(scores));
+            updateLeaderboardDisplay();
+            
+            if (scores.length === 0) {
+                leaderboardEl.style.display = 'none';
+                statusEl.textContent = 'All scores deleted. Press anywhere to start timing!';
+                statusEl.style.color = '#555555';
+            }
+        }
+
+        // Show leaderboard on page load if there are scores
+        if (scores.length > 0) {
+            setTimeout(() => {
+                showLeaderboard();
+            }, 1000);
+        }
+
+        // Prevent scrolling and zooming on mobile
+        document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+        document.addEventListener('gesturestart', e => e.preventDefault());
+        document.addEventListener('gesturechange', e => e.preventDefault());
+        document.addEventListener('gestureend', e => e.preventDefault());
+    </script>
+</body>
+</html>
