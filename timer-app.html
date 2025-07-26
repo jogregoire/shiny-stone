@@ -203,6 +203,7 @@
     <div id="leaderboard">
         <h2>🏆 Top 5 Times</h2>
         <div id="scores-container"></div>
+        <button id="newTimerBtn" style="width:100%;margin-top:15px;padding:12px 0;font-size:1.2em;background:dodgerblue;color:white;border:none;border-radius:8px;cursor:pointer;">Start New Timer</button>
     </div>
 
     <script>
@@ -543,74 +544,25 @@
 
         function showLeaderboard() {
             if (scores.length === 0) {
-                statusEl.textContent = 'No scores yet. Press anywhere to start timing!';
+                statusEl.textContent = 'No scores yet. Press the button below to start timing!';
                 statusEl.style.color = '#555555';
-                return;
             }
-
             updateLeaderboardDisplay();
             leaderboardEl.style.display = 'block';
             timerEl.style.display = 'none';
-            statusEl.textContent = 'Press anywhere to start a new timer';
+            // Hide instructions when leaderboard is shown
+            instructionsEl.style.display = 'none';
+            statusEl.textContent = 'Press the button below to start a new timer';
             statusEl.style.color = '#555555';
         }
 
-        function updateLeaderboardDisplay() {
-            scoresContainer.innerHTML = '';
-            
-            scores.forEach((score, index) => {
-                const scoreEntry = document.createElement('div');
-                scoreEntry.className = 'score-entry';
-                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏅';
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'delete-btn';
-                deleteBtn.textContent = 'Delete';
-                let deleteDebounce = false;
-                deleteBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (deleteDebounce) return;
-                    deleteDebounce = true;
-                    setTimeout(() => { deleteDebounce = false; }, 300);
-                    deleteScore(index, true);
-                });
-                const scoreSpan = document.createElement('span');
-                scoreSpan.textContent = `${medal} ${index + 1}. ${score.toFixed(3)}s`;
-                scoreEntry.appendChild(scoreSpan);
-                scoreEntry.appendChild(deleteBtn);
-                scoresContainer.appendChild(scoreEntry);
-            });
-        }
-
-function deleteScore(index, stayOnLeaderboard) {
-    scores.splice(index, 1);
-    localStorage.setItem('timer-scores', JSON.stringify(scores));
-    updateLeaderboardDisplay();
-    if (scores.length === 0) {
-        leaderboardEl.style.display = 'block'; // Keep leaderboard visible
-        timerEl.style.display = 'none';
-        statusEl.textContent = 'All scores deleted.';
-        statusEl.style.color = '#555555';
-    } else if (stayOnLeaderboard) {
-        leaderboardEl.style.display = 'block';
-        timerEl.style.display = 'none';
-        statusEl.textContent = 'Press anywhere to start a new timer';
-        statusEl.style.color = '#555555';
-    }
-}
-
-        // Show leaderboard on page load if there are scores
-        if (scores.length > 0) {
-            setTimeout(() => {
-                showLeaderboard();
-            }, 1000);
-        }
-
-        // Prevent scrolling and zooming on mobile
-        document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
-        document.addEventListener('gesturestart', e => e.preventDefault());
-        document.addEventListener('gesturechange', e => e.preventDefault());
-        document.addEventListener('gestureend', e => e.preventDefault());
-    </script>
-</body>
-</html>
+        // Add event listener for new timer button
+        document.getElementById('newTimerBtn').addEventListener('click', function() {
+            leaderboardEl.style.display = 'none';
+            instructionsEl.style.display = 'none';
+            timerEl.style.display = 'flex';
+            timerEl.textContent = '0.000s';
+            statusEl.textContent = 'Release to start timing...';
+            statusEl.style.color = 'dodgerblue';
+            timerState = 'ready';
+        });
