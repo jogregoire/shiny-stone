@@ -18,13 +18,14 @@ The web app is meant to time how long it takes me to solve a rubiks cube. The ov
 
 1. **intro**: the app starts and explains the app. there's a button to start a session
 2. **session**: enter a session: the screen shows a timer ready to start. when the finger lets go of the touch or the click of the mouse, the timer starts. The timer stops when the screen is clicked/touched again. After stopping, the app auto-transitions to the leaderboard after 2 seconds.
-3. **leaderboard**: a leaderboard is shown with up to 10 entries that fits in the screen. there are buttons next to each entry to delete them. The leaderboard is persisted in the cache of the browser. There is a "New Session" button to start a new session and return to step #2.
+3. **leaderboard**: a leaderboard is shown with up to 10 entries that fits in the screen. there are buttons next to each entry to delete them. The leaderboard is persisted in the cache of the browser. There is a "New Session" button to start a new session and return to step #2. Each entry shows the player name "Flo" with a date/time suffix.
 
 **Key Implementation Changes:**
 - Removed "View Leaderboard" button from session screen for cleaner interface
 - Removed "Back to Home" button from leaderboard screen for streamlined flow
 - Auto-transition from session to leaderboard after completing a solve
 - Simplified navigation: intro → session → auto-leaderboard → new session loop
+- Added player names with "Flo" prefix and date/time suffix (e.g., "Flo Jan 25 15:12:42")
 
 
 ## 1. Requirements & Constraints
@@ -38,7 +39,8 @@ The web app is meant to time how long it takes me to solve a rubiks cube. The ov
 - **REQ-007**: Leaderboard remains visible even if empty
 - **REQ-008**: Auto-transition from session to leaderboard after timer completion
 - **REQ-009**: Streamlined navigation without manual leaderboard access from session
-- **REQ-010**: Extensive code comments for educational clarity
+- **REQ-010**: Each leaderboard entry includes player name as "Flo" with date/time suffix (format: "Flo Jan 25 15:12:42")
+- **REQ-011**: Extensive code comments for educational clarity
 - **CON-001**: No server-side code; all logic runs in browser
 - **CON-002**: All CSS and JS must be embedded in the HTML file
 - **PAT-001**: Use state machine for app flow: `intro`, `session`, `leaderboard`
@@ -59,6 +61,7 @@ The web app is meant to time how long it takes me to solve a rubiks cube. The ov
 | TASK-008     | Add debounce to delete buttons to prevent double deletion                                            | `rubiks-timer.html`              | TASK-005             | ✅ Completed | Double-click does not delete multiple entries       |
 | TASK-009     | Add educational comments to all code sections                                                        | `rubiks-timer.html`              | TASK-002-TASK-008    | ✅ Completed | Comments present, explain logic                     |
 | TASK-010     | Validate responsive design: test on mobile/desktop, portrait/landscape                              | `rubiks-timer.html`              | TASK-002-TASK-009    | ✅ Completed | Layout adapts, no overflow, all controls accessible |
+| TASK-011     | Add player names with "Flo" prefix and date/time suffix to leaderboard entries                      | `rubiks-timer.html`              | TASK-005             | ✅ Completed | Each entry shows "Flo Jan 25 15:12:42" format      |
 
 ## 3. Alternatives
 
@@ -83,10 +86,11 @@ The web app is meant to time how long it takes me to solve a rubiks cube. The ov
 - **TEST-002**: Test timer start/stop with both mouse and touch events
 - **TEST-003**: Add multiple times, verify leaderboard displays 10 entries max
 - **TEST-004**: Delete entries, verify leaderboard persists and remains visible when empty
-- **TEST-005**: Test "Exit Leaderboard" button returns to session screen
+- **TEST-005**: Test auto-transition from session to leaderboard after timer completion
 - **TEST-006**: Validate localStorage persistence across browser sessions
 - **TEST-007**: Test responsive layout on mobile/desktop, portrait/landscape
 - **TEST-008**: Attempt double deletion, verify debounce works
+- **TEST-009**: Verify player names display correctly with "Flo" prefix and date/time suffix format
 
 ## 7. Risks & Assumptions
 

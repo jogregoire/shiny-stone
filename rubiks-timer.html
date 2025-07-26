@@ -157,17 +157,30 @@
             border-bottom: none;
         }
 
+        .entry-info {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            gap: 5px;
+        }
+
         .entry-rank {
             font-weight: bold;
             color: #333366;
-            min-width: 40px;
+            font-size: 1rem;
         }
 
         .entry-time {
             font-family: 'Courier New', monospace;
             color: #555555;
-            flex-grow: 1;
-            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .entry-player {
+            font-size: 0.9rem;
+            color: #888888;
+            font-style: italic;
         }
 
         .entry-medal {
@@ -217,13 +230,23 @@
             }
             
             .leaderboard-entry {
-                flex-direction: column;
-                gap: 10px;
-                text-align: center;
+                padding: 12px;
             }
             
-            .entry-rank, .entry-time {
-                text-align: center;
+            .entry-info {
+                gap: 3px;
+            }
+            
+            .entry-rank {
+                font-size: 0.9rem;
+            }
+            
+            .entry-time {
+                font-size: 1.1rem;
+            }
+            
+            .entry-player {
+                font-size: 0.8rem;
             }
         }
 
@@ -524,11 +547,18 @@
         function saveScore(time) {
             const scores = getScores();
             
+            // Create score entry with player name and timestamp
+            const scoreEntry = {
+                time: time,
+                player: generatePlayerName(),
+                timestamp: Date.now()
+            };
+            
             // Add new score
-            scores.push(time);
+            scores.push(scoreEntry);
             
             // Sort by time (fastest first) and keep top 10
-            scores.sort((a, b) => a - b);
+            scores.sort((a, b) => a.time - b.time);
             const topScores = scores.slice(0, 10);
             
             // Save to localStorage
@@ -536,12 +566,46 @@
         }
         
         /**
+         * Generates player name with "Flo" prefix and date/time suffix
+         * Format: "Flo Jan 25 15:12:42"
+         * @returns {string} Formatted player name
+         */
+        function generatePlayerName() {
+            const now = new Date();
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            
+            const month = months[now.getMonth()];
+            const day = now.getDate();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            
+            return `Flo ${month} ${day} ${hours}:${minutes}:${seconds}`;
+        }
+        
+        /**
          * Retrieves scores from localStorage
-         * @returns {number[]} Array of times in milliseconds
+         * Handles both old format (just times) and new format (objects with player names)
+         * @returns {Object[]} Array of score objects with time, player, and timestamp
          */
         function getScores() {
             const stored = localStorage.getItem('rubiksCubeTimes');
-            return stored ? JSON.parse(stored) : [];
+            if (!stored) return [];
+            
+            const parsed = JSON.parse(stored);
+            
+            // Handle legacy format (array of numbers) - convert to new format
+            if (parsed.length > 0 && typeof parsed[0] === 'number') {
+                return parsed.map(time => ({
+                    time: time,
+                    player: 'Flo (Legacy)',
+                    timestamp: Date.now()
+                }));
+            }
+            
+            // Return new format (array of objects)
+            return parsed;
         }
         
         /**
@@ -569,7 +633,7 @@
         
         /**
          * Renders the leaderboard UI
-         * Shows scores with medals and delete buttons
+         * Shows scores with medals, player names, and delete buttons
          * Ensures leaderboard remains visible even when empty
          */
         function renderLeaderboard() {
@@ -584,14 +648,18 @@
             
             // Build leaderboard HTML
             let html = '';
-            scores.forEach((time, index) => {
+            scores.forEach((scoreEntry, index) => {
                 const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
-                const formattedTime = formatTime(time);
+                const formattedTime = formatTime(scoreEntry.time);
+                const playerName = scoreEntry.player || 'Flo (Legacy)';
                 
                 html += `
                     <div class="leaderboard-entry">
-                        <span class="entry-rank">${medal} #${index + 1}</span>
-                        <span class="entry-time">${formattedTime}</span>
+                        <div class="entry-info">
+                            <span class="entry-rank">${medal} #${index + 1}</span>
+                            <span class="entry-time">${formattedTime}</span>
+                            <span class="entry-player">${playerName}</span>
+                        </div>
                         <button class="delete-btn" onclick="deleteScore(${index})">Delete</button>
                     </div>
                 `;
