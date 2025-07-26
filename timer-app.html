@@ -45,11 +45,15 @@
             font-weight: bold;
             text-align: center;
             margin: 20px 0;
-            display: none; /* Hidden initially */
             min-height: 20vh; /* Ensure consistent height */
-            display: flex;
+            display: none; /* Will be shown when needed */
             align-items: center;
             justify-content: center;
+        }
+
+        /* Show timer when active */
+        #timer.active {
+            display: flex;
         }
 
         /* Instructions text */
@@ -127,6 +131,33 @@
         }
 
         /* Responsive adjustments for different screen sizes */
+        @media (min-width: 769px) {
+            /* Desktop: Use larger minimum font sizes */
+            #timer {
+                font-size: max(8vw, 60px);
+            }
+            
+            #instructions {
+                font-size: max(3vw, 18px);
+            }
+            
+            #leaderboard h2 {
+                font-size: max(1vw, 24px);
+            }
+            
+            .score-entry {
+                font-size: max(1vw, 16px);
+            }
+            
+            .delete-btn {
+                font-size: max(1vw, 14px);
+            }
+            
+            #status {
+                font-size: max(3vw, 20px);
+            }
+        }
+        
         @media (max-width: 768px) {
             #timer {
                 font-size: 12vw;
@@ -556,6 +587,46 @@
             statusEl.style.color = '#555555';
         }
 
+        function updateLeaderboardDisplay() {
+            scoresContainer.innerHTML = '';
+            
+            if (scores.length === 0) {
+                scoresContainer.innerHTML = '<p style="text-align:center;color:#666;font-style:italic;">No times recorded yet</p>';
+                return;
+            }
+            
+            scores.forEach((score, index) => {
+                const scoreEntry = document.createElement('div');
+                scoreEntry.className = 'score-entry';
+                
+                // Add medal emoji for top 3
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+                
+                scoreEntry.innerHTML = `
+                    <span>${medal} ${score.toFixed(3)}s</span>
+                    <button class="delete-btn" onclick="deleteScore(${index})">Delete</button>
+                `;
+                
+                scoresContainer.appendChild(scoreEntry);
+            });
+        }
+
+        function deleteScore(index) {
+            if (index >= 0 && index < scores.length) {
+                scores.splice(index, 1);
+                localStorage.setItem('timer-scores', JSON.stringify(scores));
+                updateLeaderboardDisplay();
+                
+                // Keep leaderboard visible even if empty
+                leaderboardEl.style.display = 'block';
+                
+                if (scores.length === 0) {
+                    statusEl.textContent = 'All scores deleted. Press the button below to start timing!';
+                    statusEl.style.color = '#555555';
+                }
+            }
+        }
+
         // Add event listener for new timer button
         document.getElementById('newTimerBtn').addEventListener('click', function() {
             leaderboardEl.style.display = 'none';
@@ -566,3 +637,26 @@
             statusEl.style.color = 'dodgerblue';
             timerState = 'ready';
         });
+
+        // Initialize the app
+        function initializeApp() {
+            // Load saved scores
+            scores = JSON.parse(localStorage.getItem('timer-scores') || '[]');
+            
+            // Show initial state
+            if (scores.length > 0) {
+                showLeaderboard();
+            } else {
+                // Show instructions for first-time users
+                instructionsEl.style.display = 'block';
+                timerEl.style.display = 'none';
+                leaderboardEl.style.display = 'none';
+                statusEl.textContent = '';
+            }
+        }
+
+        // Start the app when page loads
+        initializeApp();
+    </script>
+</body>
+</html>
