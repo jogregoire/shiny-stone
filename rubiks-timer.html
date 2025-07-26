@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rubik's Cube Timer</title>
+    <style>
+        /* Base styles for educational HTML/CSS/JS learning */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #f0f8ff, #e6f3ff);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #333366;
+            /* Prevent text selection during timer interactions */
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        /* Universal container for all screens */
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            max-width: 90vw;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Intro screen styles */
+        .intro-title {
+            font-size: 3rem;
+            color: #333366;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .intro-description {
+            font-size: 1.2rem;
+            color: #555555;
+            max-width: 600px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        /* Universal button styles following project conventions */
+        .btn {
+            background: dodgerblue;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            min-width: 120px;
+        }
+
+        .btn:hover {
+            background: #1c7dd9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Session screen styles - timer display and interaction area */
+        .timer-display {
+            font-size: 6rem;
+            color: #333366;
+            font-weight: bold;
+            margin: 30px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .timer-status {
+            font-size: 1.5rem;
+            color: #555555;
+            margin: 20px 0;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Interactive area for timer control - full screen clickable */
+        .timer-interaction {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            cursor: pointer;
+            background: transparent;
+        }
+
+        /* State-based styling for timer interaction feedback */
+        .timer-interaction.ready {
+            background: rgba(0, 255, 0, 0.1);
+            cursor: pointer;
+        }
+
+        .timer-interaction.running {
+            background: rgba(255, 165, 0, 0.1);
+            cursor: pointer;
+        }
+
+        /* Leaderboard styles */
+        .leaderboard-title {
+            font-size: 2.5rem;
+            color: #333366;
+            margin-bottom: 20px;
+        }
+
+        .leaderboard-container {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .leaderboard-entry {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            font-size: 1.1rem;
+        }
+
+        .leaderboard-entry:last-child {
+            border-bottom: none;
+        }
+
+        .entry-rank {
+            font-weight: bold;
+            color: #333366;
+            min-width: 40px;
+        }
+
+        .entry-time {
+            font-family: 'Courier New', monospace;
+            color: #555555;
+            flex-grow: 1;
+            text-align: center;
+        }
+
+        .entry-medal {
+            margin-right: 10px;
+            font-size: 1.3rem;
+        }
+
+        .delete-btn {
+            background: #ff4444;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s ease;
+        }
+
+        .delete-btn:hover {
+            background: #cc3333;
+        }
+
+        .delete-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .empty-leaderboard {
+            text-align: center;
+            color: #888888;
+            font-style: italic;
+            padding: 40px 20px;
+        }
+
+        /* Responsive design for mobile and desktop */
+        @media (max-width: 768px) {
+            .timer-display {
+                font-size: 4rem;
+            }
+            
+            .intro-title {
+                font-size: 2rem;
+            }
+            
+            .intro-description {
+                font-size: 1rem;
+            }
+            
+            .leaderboard-entry {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .entry-rank, .entry-time {
+                text-align: center;
+            }
+        }
+
+        /* Landscape orientation optimizations */
+        @media (orientation: landscape) and (max-height: 600px) {
+            .timer-display {
+                font-size: 4rem;
+                margin: 15px 0;
+            }
+            
+            .intro-title {
+                font-size: 2rem;
+                margin-bottom: 15px;
+            }
+            
+            .intro-description {
+                font-size: 1rem;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- INTRO SCREEN: App explanation and entry point -->
+    <div id="introScreen" class="screen active">
+        <h1 class="intro-title">🧩 Rubik's Cube Timer</h1>
+        <div class="intro-description">
+            <p>Time your Rubik's cube solves with precision!</p>
+            <p><strong>How it works:</strong></p>
+            <p>1. Press and hold anywhere to get ready</p>
+            <p>2. Release to start the timer</p>
+            <p>3. Touch/click again to stop and save your time</p>
+            <p>4. View your best times on the leaderboard</p>
+        </div>
+        <button class="btn" onclick="startSession()">Start Session</button>
+    </div>
+
+    <!-- SESSION SCREEN: Timer interface with universal input handling -->
+    <div id="sessionScreen" class="screen">
+        <div class="timer-display" id="timerDisplay">00:00.00</div>
+        <div class="timer-status" id="timerStatus">Press and hold to get ready</div>
+        <div class="timer-interaction" id="timerInteraction"></div>
+        <button class="btn" onclick="showLeaderboard()">View Leaderboard</button>
+    </div>
+
+    <!-- LEADERBOARD SCREEN: Top 10 times with delete functionality -->
+    <div id="leaderboardScreen" class="screen">
+        <h2 class="leaderboard-title">🏆 Leaderboard</h2>
+        <div class="leaderboard-container" id="leaderboardContainer">
+            <div class="empty-leaderboard" id="emptyLeaderboard">
+                No times recorded yet. Start a session to set your first record!
+            </div>
+        </div>
+        <button class="btn" onclick="startSession()">New Session</button>
+        <button class="btn" onclick="showIntro()">Back to Home</button>
+    </div>
+
+    <script>
+        // ===========================================
+        // STATE MANAGEMENT & GLOBAL VARIABLES
+        // ===========================================
+        
+        /**
+         * App state machine: tracks current screen and timer state
+         * appState: 'intro' | 'session' | 'leaderboard'
+         * timerState: 'idle' | 'ready' | 'running' | 'stopped'
+         */
+        let appState = 'intro';
+        let timerState = 'idle';
+        
+        // Timer variables for time tracking
+        let startTime = 0;
+        let elapsedTime = 0;
+        let timerInterval = null;
+        
+        // Debounce variables for preventing double actions
+        let lastDeleteTime = 0;
+        const DEBOUNCE_DELAY = 300; // 300ms debounce for delete operations
+        
+        // DOM element references for efficient access
+        const introScreen = document.getElementById('introScreen');
+        const sessionScreen = document.getElementById('sessionScreen');
+        const leaderboardScreen = document.getElementById('leaderboardScreen');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const timerStatus = document.getElementById('timerStatus');
+        const timerInteraction = document.getElementById('timerInteraction');
+        const leaderboardContainer = document.getElementById('leaderboardContainer');
+        const emptyLeaderboard = document.getElementById('emptyLeaderboard');
+
+        // ===========================================
+        // SCREEN NAVIGATION FUNCTIONS
+        // ===========================================
+        
+        /**
+         * Shows intro screen and resets app state
+         * Called when user wants to return to home screen
+         */
+        function showIntro() {
+            appState = 'intro';
+            timerState = 'idle';
+            resetTimer();
+            
+            // Hide all screens
+            introScreen.classList.remove('active');
+            sessionScreen.classList.remove('active');
+            leaderboardScreen.classList.remove('active');
+            
+            // Show intro screen
+            introScreen.classList.add('active');
+        }
+        
+        /**
+         * Starts a new timer session
+         * Transitions from intro or leaderboard to session screen
+         */
+        function startSession() {
+            appState = 'session';
+            timerState = 'idle';
+            resetTimer();
+            
+            // Hide all screens
+            introScreen.classList.remove('active');
+            sessionScreen.classList.remove('active');
+            leaderboardScreen.classList.remove('active');
+            
+            // Show session screen
+            sessionScreen.classList.add('active');
+            
+            // Update UI for ready state
+            updateTimerStatus();
+        }
+        
+        /**
+         * Shows leaderboard screen with current scores
+         * Loads and displays saved times from localStorage
+         */
+        function showLeaderboard() {
+            appState = 'leaderboard';
+            timerState = 'idle';
+            resetTimer();
+            
+            // Hide all screens
+            introScreen.classList.remove('active');
+            sessionScreen.classList.remove('active');
+            leaderboardScreen.classList.remove('active');
+            
+            // Show leaderboard screen
+            leaderboardScreen.classList.add('active');
+            
+            // Load and display leaderboard data
+            renderLeaderboard();
+        }
+
+        // ===========================================
+        // TIMER LOGIC & TIME MANAGEMENT
+        // ===========================================
+        
+        /**
+         * Resets timer to initial state
+         * Clears intervals and resets display
+         */
+        function resetTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            startTime = 0;
+            elapsedTime = 0;
+            timerDisplay.textContent = '00:00.00';
+            timerInteraction.className = 'timer-interaction';
+        }
+        
+        /**
+         * Starts the timer and begins time tracking
+         * Called when user releases press (mouse up or touch end)
+         */
+        function startTimer() {
+            timerState = 'running';
+            startTime = performance.now();
+            timerInteraction.classList.add('running');
+            updateTimerStatus();
+            
+            // Update timer display every 10ms for smooth animation
+            timerInterval = setInterval(() => {
+                elapsedTime = performance.now() - startTime;
+                displayTime(elapsedTime);
+            }, 10);
+        }
+        
+        /**
+         * Stops the timer and saves the result
+         * Called when user touches/clicks during running state
+         */
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            timerState = 'stopped';
+            timerInteraction.classList.remove('running', 'ready');
+            
+            // Save the time to leaderboard
+            saveScore(elapsedTime);
+            updateTimerStatus();
+            
+            // Auto-transition to leaderboard after 2 seconds
+            setTimeout(() => {
+                if (appState === 'session' && timerState === 'stopped') {
+                    showLeaderboard();
+                }
+            }, 2000);
+        }
+        
+        /**
+         * Formats milliseconds into MM:SS.SS display format
+         * @param {number} ms - Time in milliseconds
+         */
+        function displayTime(ms) {
+            const totalSeconds = ms / 1000;
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            const centiseconds = Math.floor((totalSeconds % 1) * 100);
+            
+            const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
+            timerDisplay.textContent = formattedTime;
+        }
+        
+        /**
+         * Updates timer status message based on current state
+         * Provides user feedback for current timer state
+         */
+        function updateTimerStatus() {
+            switch (timerState) {
+                case 'idle':
+                    timerStatus.textContent = 'Press and hold to get ready';
+                    break;
+                case 'ready':
+                    timerStatus.textContent = 'Release to start timer';
+                    break;
+                case 'running':
+                    timerStatus.textContent = 'Touch/click to stop timer';
+                    break;
+                case 'stopped':
+                    timerStatus.textContent = `Time saved: ${timerDisplay.textContent}`;
+                    break;
+            }
+        }
+
+        // ===========================================
+        // UNIVERSAL INPUT HANDLING (MOUSE + TOUCH)
+        // ===========================================
+        
+        /**
+         * Handles press start events (mouse down, touch start)
+         * Prepares timer for starting when user presses and holds
+         * @param {Event} event - Mouse or touch event
+         */
+        function handlePressStart(event) {
+            event.preventDefault(); // Prevent default browser behaviors
+            
+            if (appState !== 'session') return;
+            
+            if (timerState === 'idle') {
+                // User is getting ready to start timer
+                timerState = 'ready';
+                timerInteraction.classList.add('ready');
+                updateTimerStatus();
+            } else if (timerState === 'running') {
+                // User wants to stop the timer
+                stopTimer();
+            }
+        }
+        
+        /**
+         * Handles press end events (mouse up, touch end)
+         * Starts timer when user releases after getting ready
+         * @param {Event} event - Mouse or touch event
+         */
+        function handlePressEnd(event) {
+            event.preventDefault(); // Prevent default browser behaviors
+            
+            if (appState !== 'session') return;
+            
+            if (timerState === 'ready') {
+                // User released after getting ready - start timer
+                startTimer();
+            }
+        }
+
+        // ===========================================
+        // LEADERBOARD & LOCALSTORAGE MANAGEMENT
+        // ===========================================
+        
+        /**
+         * Saves a new score to the leaderboard
+         * Manages sorting, deduplication, and persistence
+         * @param {number} time - Time in milliseconds to save
+         */
+        function saveScore(time) {
+            const scores = getScores();
+            
+            // Add new score
+            scores.push(time);
+            
+            // Sort by time (fastest first) and keep top 10
+            scores.sort((a, b) => a - b);
+            const topScores = scores.slice(0, 10);
+            
+            // Save to localStorage
+            localStorage.setItem('rubiksCubeTimes', JSON.stringify(topScores));
+        }
+        
+        /**
+         * Retrieves scores from localStorage
+         * @returns {number[]} Array of times in milliseconds
+         */
+        function getScores() {
+            const stored = localStorage.getItem('rubiksCubeTimes');
+            return stored ? JSON.parse(stored) : [];
+        }
+        
+        /**
+         * Deletes a score from the leaderboard
+         * Includes debounce to prevent accidental double deletion
+         * @param {number} index - Index of score to delete
+         */
+        function deleteScore(index) {
+            const now = Date.now();
+            
+            // Debounce: prevent rapid consecutive deletions
+            if (now - lastDeleteTime < DEBOUNCE_DELAY) {
+                return;
+            }
+            lastDeleteTime = now;
+            
+            const scores = getScores();
+            
+            if (index >= 0 && index < scores.length) {
+                scores.splice(index, 1);
+                localStorage.setItem('rubiksCubeTimes', JSON.stringify(scores));
+                renderLeaderboard(); // Re-render after deletion
+            }
+        }
+        
+        /**
+         * Renders the leaderboard UI
+         * Shows scores with medals and delete buttons
+         * Ensures leaderboard remains visible even when empty
+         */
+        function renderLeaderboard() {
+            const scores = getScores();
+            
+            if (scores.length === 0) {
+                // Show empty state but keep leaderboard visible
+                leaderboardContainer.style.display = 'block';
+                leaderboardContainer.innerHTML = '<div class="empty-leaderboard">No times recorded yet. Start a session to set your first record!</div>';
+                return;
+            }
+            
+            // Build leaderboard HTML
+            let html = '';
+            scores.forEach((time, index) => {
+                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+                const formattedTime = formatTime(time);
+                
+                html += `
+                    <div class="leaderboard-entry">
+                        <span class="entry-rank">${medal} #${index + 1}</span>
+                        <span class="entry-time">${formattedTime}</span>
+                        <button class="delete-btn" onclick="deleteScore(${index})">Delete</button>
+                    </div>
+                `;
+            });
+            
+            leaderboardContainer.innerHTML = html;
+        }
+        
+        /**
+         * Formats time for leaderboard display
+         * @param {number} ms - Time in milliseconds
+         * @returns {string} Formatted time string
+         */
+        function formatTime(ms) {
+            const totalSeconds = ms / 1000;
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = Math.floor(totalSeconds % 60);
+            const centiseconds = Math.floor((totalSeconds % 1) * 100);
+            
+            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
+        }
+
+        // ===========================================
+        // EVENT LISTENERS & INITIALIZATION
+        // ===========================================
+        
+        /**
+         * Initialize the app when DOM is loaded
+         * Sets up all event listeners for universal input handling
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mouse event listeners for desktop interaction
+            timerInteraction.addEventListener('mousedown', handlePressStart);
+            timerInteraction.addEventListener('mouseup', handlePressEnd);
+            
+            // Touch event listeners for mobile interaction
+            timerInteraction.addEventListener('touchstart', handlePressStart);
+            timerInteraction.addEventListener('touchend', handlePressEnd);
+            
+            // Prevent context menu on long press (mobile)
+            timerInteraction.addEventListener('contextmenu', function(event) {
+                event.preventDefault();
+            });
+            
+            // Prevent scrolling and zooming during touch interactions
+            document.addEventListener('touchmove', function(event) {
+                if (appState === 'session') {
+                    event.preventDefault();
+                }
+            }, { passive: false });
+            
+            // Prevent pinch-to-zoom gestures
+            document.addEventListener('gesturestart', function(event) {
+                event.preventDefault();
+            });
+            
+            console.log('Rubik\'s Cube Timer initialized successfully!');
+        });
+    </script>
+</body>
+</html>
