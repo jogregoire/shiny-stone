@@ -77,25 +77,54 @@
             position: absolute;
             pointer-events: none;
             border-radius: 50%;
-            animation: sparkle 2s infinite;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        @keyframes sparkle {
-            0%, 100% { 
-                transform: scale(1);
-                opacity: 0.8;
+        .circle-outer {
+            position: absolute;
+            border-radius: 50%;
+            border: 4px solid;
+            border-style: solid;
+            animation: spin 2s linear infinite;
+        }
+
+        .circle-inner {
+            position: absolute;
+            border-radius: 50%;
+            transform: scale(0.6);
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes appear {
+            0% { 
+                transform: scale(0);
+                opacity: 0;
             }
-            50% { 
-                transform: scale(1.2);
+            100% { 
+                transform: scale(1);
                 opacity: 1;
             }
+        }
+
+        .touch-light.appearing {
+            animation: appear 0.4s ease-out;
         }
 
         @keyframes eliminate {
             0% { 
                 transform: scale(1);
                 opacity: 1;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 0.5;
             }
             100% { 
                 transform: scale(0);
@@ -104,21 +133,22 @@
         }
 
         .eliminating {
-            animation: eliminate 0.8s ease-out forwards;
+            animation: eliminate 1.2s ease-out forwards;
         }
 
         .winner {
-            animation: celebrate 1s infinite;
+            animation: celebrate 0.8s infinite;
         }
 
         @keyframes celebrate {
             0%, 100% { 
-                transform: scale(1.2);
+                transform: scale(1);
                 opacity: 1;
             }
             50% { 
-                transform: scale(1.5);
+                transform: scale(1.3);
                 opacity: 0.9;
+                filter: brightness(1.5);
             }
         }
 
@@ -225,6 +255,9 @@
             handleTouchStart(e) {
                 if (!this.gameActive || this.eliminating) return;
 
+                // Add haptic feedback on touch
+                this.vibrate(30);
+
                 for (let touch of e.changedTouches) {
                     const touchId = touch.identifier;
                     const x = touch.clientX;
@@ -267,21 +300,44 @@
 
             createLight(touchId, x, y) {
                 const light = document.createElement('div');
-                light.className = 'touch-light';
+                light.className = 'touch-light appearing';
                 
                 const colorIndex = Array.from(this.touches.keys()).indexOf(touchId);
                 const color = this.colors[colorIndex % this.colors.length];
                 
-                const size = 80 + Math.random() * 40;
+                const size = 100;
                 light.style.width = `${size}px`;
                 light.style.height = `${size}px`;
                 light.style.left = `${x - size/2}px`;
                 light.style.top = `${y - size/2}px`;
-                light.style.background = `radial-gradient(circle, ${color}40 0%, ${color}80 50%, ${color}20 100%)`;
-                light.style.boxShadow = `0 0 20px ${color}, 0 0 40px ${color}40`;
+                
+                // Create outer rotating ring
+                const outerRing = document.createElement('div');
+                outerRing.className = 'circle-outer';
+                outerRing.style.width = '100%';
+                outerRing.style.height = '100%';
+                outerRing.style.borderColor = color;
+                outerRing.style.borderTopColor = 'transparent';
+                outerRing.style.borderRightColor = 'transparent';
+                
+                // Create inner solid circle
+                const innerCircle = document.createElement('div');
+                innerCircle.className = 'circle-inner';
+                innerCircle.style.width = '100%';
+                innerCircle.style.height = '100%';
+                innerCircle.style.backgroundColor = color;
+                innerCircle.style.opacity = '0.7';
+                
+                light.appendChild(outerRing);
+                light.appendChild(innerCircle);
                 
                 this.gameArea.appendChild(light);
                 this.lights.set(touchId, light);
+                
+                // Remove appearing class after animation
+                setTimeout(() => {
+                    light.classList.remove('appearing');
+                }, 400);
             }
 
             updateLight(touchId, x, y) {
@@ -308,6 +364,8 @@
                     if (!this.hasShownReadyMessage) {
                         this.showMessage("Ready! Keep holding...", 1000);
                         this.hasShownReadyMessage = true;
+                        // Ready haptic feedback
+                        this.vibrate([50, 50, 50]);
                     }
                     
                     // Start elimination after a delay
@@ -324,6 +382,9 @@
                 this.gameStatus.textContent = 'Elimination starting...';
                 this.gameStatus.classList.add('visible');
                 
+                // Haptic feedback for elimination start
+                this.vibrate([100, 50, 100]);
+                
                 await this.sleep(2000);
                 this.gameStatus.classList.remove('visible');
 
@@ -338,8 +399,18 @@
                     const light = this.lights.get(touchId);
                     
                     if (light) {
+                        // Stop the spinning animation
+                        const outerRing = light.querySelector('.circle-outer');
+                        if (outerRing) {
+                            outerRing.style.animation = 'none';
+                        }
+                        
                         light.classList.add('eliminating');
-                        await this.sleep(1000);
+                        
+                        // Haptic feedback for elimination
+                        this.vibrate(50);
+                        
+                        await this.sleep(800);
                         light.remove();
                         this.lights.delete(touchId);
                         this.touches.delete(touchId);
@@ -351,9 +422,17 @@
                 winners.forEach(touchId => {
                     const light = this.lights.get(touchId);
                     if (light) {
+                        // Stop spinning and add winner effect
+                        const outerRing = light.querySelector('.circle-outer');
+                        if (outerRing) {
+                            outerRing.style.animation = 'none';
+                        }
                         light.classList.add('winner');
                     }
                 });
+                
+                // Winner haptic feedback
+                this.vibrate([200, 100, 200, 100, 400]);
                 
                 this.gameStatus.textContent = 'Winner!';
                 this.gameStatus.classList.add('visible');
@@ -385,6 +464,21 @@
 
             sleep(ms) {
                 return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            vibrate(pattern) {
+                // Check if vibration API is supported
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(pattern);
+                }
+            }
+
+            showMessage(message, duration = 2000) {
+                this.gameStatus.textContent = message;
+                this.gameStatus.classList.add('visible');
+                setTimeout(() => {
+                    this.gameStatus.classList.remove('visible');
+                }, duration);
             }
         }
 
