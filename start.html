@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Who Goes First?</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Chwazi Clone - Touch Player Selection</title>
     <style>
+        /* Global Styles */
         * {
             margin: 0;
             padding: 0;
@@ -12,480 +13,573 @@
         }
 
         body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
-            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            color: #ffffff;
             overflow: hidden;
+            height: 100vh;
+            position: relative;
+            touch-action: none; /* Prevent default touch behaviors */
+            user-select: none; /* Prevent text selection */
         }
 
-        .controls {
+        /* Game Container */
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.05) 0%, transparent 50%);
+        }
+
+        /* Status Display */
+        .status-display {
             position: absolute;
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 100;
             text-align: center;
-            color: white;
-            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            background: rgba(0,0,0,0.7);
             padding: 15px 25px;
-            border-radius: 20px;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            touch-action: auto;
-            pointer-events: auto;
-        }
-
-        .controls h1 {
-            font-size: 24px;
-            margin-bottom: 10px;
-            color: #fff;
-        }
-
-        .start-btn {
-            background: linear-gradient(45deg, #ff6b6b, #ff8e8e);
-            color: white;
-            border: none;
-            padding: 12px 24px;
             border-radius: 25px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .status-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #f39c12);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradient-shift 3s ease-in-out infinite;
+        }
+
+        .status-message {
             font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 10px;
+            opacity: 0.9;
+            color: #e0e0e0;
         }
 
-        .start-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        @keyframes gradient-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
         }
 
-        .start-btn:disabled {
-            background: rgba(255, 255, 255, 0.1);
-            cursor: not-allowed;
-        }
-
-        .game-area {
+        /* Touch Circles */
+        .touch-circle {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            cursor: crosshair;
-            touch-action: none;
-        }
-
-        .touch-light {
-            position: absolute;
+            width: 120px;
+            height: 120px;
             pointer-events: none;
-            border-radius: 50%;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            z-index: 100;
+            transform: translate(-50%, -50%) scale(0);
+            animation: circle-appear 0.3s ease-out forwards;
         }
 
+        /* Outer rotating ring */
         .circle-outer {
             position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 4px solid transparent;
             border-radius: 50%;
-            border: 4px solid;
-            border-style: solid;
-            animation: spin 2s linear infinite;
+            background: conic-gradient(from 0deg, var(--circle-color), transparent, var(--circle-color));
+            animation: rotate 2s linear infinite;
+            opacity: 0.8;
         }
 
+        /* Inner solid fill */
         .circle-inner {
             position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 80px;
+            height: 80px;
+            background: var(--circle-color);
             border-radius: 50%;
-            transform: scale(0.6);
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(255,255,255,0.3);
+            opacity: 0.9;
         }
 
-        @keyframes spin {
+        /* Circle animations */
+        @keyframes circle-appear {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(360deg); }
+        }
+
+        @keyframes rotate {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
 
-        @keyframes appear {
-            0% { 
-                transform: scale(0);
-                opacity: 0;
-            }
-            100% { 
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-
-        .touch-light.appearing {
-            animation: appear 0.4s ease-out;
-        }
-
         @keyframes eliminate {
-            0% { 
-                transform: scale(1);
-                opacity: 1;
-            }
-            50% {
-                transform: scale(1.2);
-                opacity: 0.5;
-            }
-            100% { 
-                transform: scale(0);
-                opacity: 0;
-            }
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
         }
 
-        .eliminating {
-            animation: eliminate 1.2s ease-out forwards;
-        }
-
-        .winner {
-            animation: celebrate 0.8s infinite;
-        }
-
-        @keyframes celebrate {
+        @keyframes winner-celebrate {
             0%, 100% { 
-                transform: scale(1);
-                opacity: 1;
+                transform: translate(-50%, -50%) scale(1); 
+                filter: brightness(1) drop-shadow(0 0 10px var(--circle-color));
             }
             50% { 
-                transform: scale(1.3);
-                opacity: 0.9;
-                filter: brightness(1.5);
+                transform: translate(-50%, -50%) scale(1.4); 
+                filter: brightness(1.5) drop-shadow(0 0 30px var(--circle-color));
             }
         }
 
+        /* Instructions */
         .instructions {
             position: absolute;
-            bottom: 20px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            color: rgba(255, 255, 255, 0.7);
             text-align: center;
-            font-size: 14px;
-            z-index: 100;
-            max-width: 90%;
-        }
-
-        .game-status {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 24px;
-            text-align: center;
-            z-index: 100;
-            opacity: 0;
+            font-size: 18px;
+            opacity: 0.7;
+            background: rgba(0,0,0,0.5);
+            padding: 15px 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
             transition: opacity 0.3s ease;
         }
 
-        .game-status.visible {
-            opacity: 1;
-        }
-
-        .controls.hidden {
+        .instructions.hidden {
             opacity: 0;
             pointer-events: none;
+        }
+
+        /* Reset button */
+        .reset-button {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+
+        .reset-button:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.5);
+            transform: scale(1.05);
+        }
+
+        /* Game states */
+        .game-container.eliminating .instructions {
+            opacity: 0;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            .touch-circle {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .circle-inner {
+                width: 65px;
+                height: 65px;
+            }
+            
+            .status-title {
+                font-size: 20px;
+            }
+            
+            .status-message {
+                font-size: 14px;
+            }
+            
+            .instructions {
+                font-size: 16px;
+                padding: 12px 20px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="controls" id="controls">
-        <h1>Who Goes First?</h1>
-        <button class="start-btn" id="startBtn">Start Game</button>
-    </div>
+    <div class="game-container" id="gameContainer">
+        <!-- Status Display -->
+        <div class="status-display">
+            <div class="status-title">Chwazi Clone</div>
+            <div class="status-message" id="statusMessage">Touch the screen with multiple fingers</div>
+        </div>
 
-    <div class="game-area" id="gameArea"></div>
+        <!-- Instructions -->
+        <div class="instructions" id="instructions">
+            Place 2-12 fingers on the screen and wait for the selection!
+        </div>
 
-    <div class="game-status" id="gameStatus"></div>
-
-    <div class="instructions" id="instructions">
-        Place your phone on a flat surface and have everyone put one finger on the screen
+        <!-- Reset Button -->
+        <button class="reset-button" id="resetButton" onclick="resetGame()">Reset</button>
     </div>
 
     <script>
-        class WhoGoesFirstGame {
-            constructor() {
-                this.touches = new Map();
-                this.lights = new Map();
-                this.gameActive = false;
-                this.eliminating = false;
-                this.playersToSelect = 1; // Always select 1 player
-                this.eliminationTimeout = null;
-                this.hasShownReadyMessage = false;
-                
-                this.colors = [
-                    '#ff6b6b', '#4ecdc4', '#45b7d1', '#f9ca24', 
-                    '#f0932b', '#eb4d4b', '#6c5ce7', '#a29bfe',
-                    '#fd79a8', '#fdcb6e', '#00b894', '#00cec9'
-                ];
-                
-                this.init();
-            }
+        // Game state management
+        let gameState = 'idle'; // 'idle', 'active', 'eliminating', 'winner'
+        let touchPoints = new Map(); // Map to store active touch points
+        let eliminationTimer = null;
+        let eliminationInProgress = false;
 
-            init() {
-                this.gameArea = document.getElementById('gameArea');
-                this.controls = document.getElementById('controls');
-                this.startBtn = document.getElementById('startBtn');
-                this.gameStatus = document.getElementById('gameStatus');
-                this.instructions = document.getElementById('instructions');
+        // Color palette for circles (12 distinct colors)
+        const colors = [
+            '#ff6b6b', '#4ecdc4', '#45b7d1', '#f39c12',
+            '#e74c3c', '#2ecc71', '#9b59b6', '#f1c40f',
+            '#e67e22', '#1abc9c', '#3498db', '#fd79a8'
+        ];
 
-                this.startBtn.addEventListener('click', () => this.startGame());
+        // DOM elements
+        const gameContainer = document.getElementById('gameContainer');
+        const statusMessage = document.getElementById('statusMessage');
+        const instructions = document.getElementById('instructions');
 
-                // Touch events for mobile
-                this.gameArea.addEventListener('touchstart', (e) => this.handleTouchStart(e));
-                this.gameArea.addEventListener('touchmove', (e) => this.handleTouchMove(e));
-                this.gameArea.addEventListener('touchend', (e) => this.handleTouchEnd(e));
-                this.gameArea.addEventListener('touchcancel', (e) => this.handleTouchEnd(e));
-
-                // Prevent default touch behaviors only on the game area
-                this.gameArea.addEventListener('touchstart', (e) => e.preventDefault(), {passive: false});
-                this.gameArea.addEventListener('touchmove', (e) => e.preventDefault(), {passive: false});
-            }
-
-            startGame() {
-                this.gameActive = true;
-                this.controls.classList.add('hidden');
-                this.gameStatus.textContent = 'Everyone put a finger on the screen!';
-                this.gameStatus.classList.add('visible');
-                
-                setTimeout(() => {
-                    this.gameStatus.classList.remove('visible');
-                }, 3000);
-            }
-
-            handleTouchStart(e) {
-                if (!this.gameActive || this.eliminating) return;
-
-                // Add haptic feedback on touch
-                this.vibrate(30);
-
-                for (let touch of e.changedTouches) {
-                    const touchId = touch.identifier;
-                    const x = touch.clientX;
-                    const y = touch.clientY;
-
-                    this.touches.set(touchId, {x, y});
-                    this.createLight(touchId, x, y);
-                }
-                
-                // Check if we have enough players to start elimination
-                this.checkForElimination();
-            }
-
-            handleTouchMove(e) {
-                if (!this.gameActive || this.eliminating) return;
-
-                for (let touch of e.changedTouches) {
-                    const touchId = touch.identifier;
-                    if (this.touches.has(touchId)) {
-                        const x = touch.clientX;
-                        const y = touch.clientY;
-                        
-                        this.touches.set(touchId, {x, y});
-                        this.updateLight(touchId, x, y);
-                    }
-                }
-            }
-
-            handleTouchEnd(e) {
-                if (!this.gameActive || this.eliminating) return;
-
-                for (let touch of e.changedTouches) {
-                    const touchId = touch.identifier;
-                    this.removeTouch(touchId);
-                }
-
-                // Don't start elimination when fingers are lifted
-                // Wait for user to manually trigger elimination
-            }
-
-            createLight(touchId, x, y) {
-                const light = document.createElement('div');
-                light.className = 'touch-light appearing';
-                
-                const colorIndex = Array.from(this.touches.keys()).indexOf(touchId);
-                const color = this.colors[colorIndex % this.colors.length];
-                
-                const size = 100;
-                light.style.width = `${size}px`;
-                light.style.height = `${size}px`;
-                light.style.left = `${x - size/2}px`;
-                light.style.top = `${y - size/2}px`;
-                
-                // Create outer rotating ring
-                const outerRing = document.createElement('div');
-                outerRing.className = 'circle-outer';
-                outerRing.style.width = '100%';
-                outerRing.style.height = '100%';
-                outerRing.style.borderColor = color;
-                outerRing.style.borderTopColor = 'transparent';
-                outerRing.style.borderRightColor = 'transparent';
-                
-                // Create inner solid circle
-                const innerCircle = document.createElement('div');
-                innerCircle.className = 'circle-inner';
-                innerCircle.style.width = '100%';
-                innerCircle.style.height = '100%';
-                innerCircle.style.backgroundColor = color;
-                innerCircle.style.opacity = '0.7';
-                
-                light.appendChild(outerRing);
-                light.appendChild(innerCircle);
-                
-                this.gameArea.appendChild(light);
-                this.lights.set(touchId, light);
-                
-                // Remove appearing class after animation
-                setTimeout(() => {
-                    light.classList.remove('appearing');
-                }, 400);
-            }
-
-            updateLight(touchId, x, y) {
-                const light = this.lights.get(touchId);
-                if (light) {
-                    const size = parseFloat(light.style.width);
-                    light.style.left = `${x - size/2}px`;
-                    light.style.top = `${y - size/2}px`;
-                }
-            }
-
-            removeTouch(touchId) {
-                this.touches.delete(touchId);
-                const light = this.lights.get(touchId);
-                if (light) {
-                    light.remove();
-                    this.lights.delete(touchId);
-                }
-            }
-
-            checkForElimination() {
-                // Only start elimination if we have at least 2 players and someone hasn't started elimination yet
-                if (this.touches.size >= 2 && !this.eliminating && !this.eliminationTimeout) {
-                    if (!this.hasShownReadyMessage) {
-                        this.showMessage("Ready! Keep holding...", 1000);
-                        this.hasShownReadyMessage = true;
-                        // Ready haptic feedback
-                        this.vibrate([50, 50, 50]);
-                    }
-                    
-                    // Start elimination after a delay
-                    this.eliminationTimeout = setTimeout(() => {
-                        this.startElimination();
-                    }, 2000); // 2 second delay after ready message
-                }
-            }
-
-            async startElimination() {
-                if (this.touches.size < 2) return;
-                
-                this.eliminating = true;
-                this.gameStatus.textContent = 'Elimination starting...';
-                this.gameStatus.classList.add('visible');
-                
-                // Haptic feedback for elimination start
-                this.vibrate([100, 50, 100]);
-                
-                await this.sleep(2000);
-                this.gameStatus.classList.remove('visible');
-
-                const touchIds = Array.from(this.touches.keys());
-                const shuffled = [...touchIds].sort(() => Math.random() - 0.5);
-                
-                // Eliminate all but the selected number of players
-                const toEliminate = shuffled.slice(this.playersToSelect);
-                
-                for (let i = 0; i < toEliminate.length; i++) {
-                    const touchId = toEliminate[i];
-                    const light = this.lights.get(touchId);
-                    
-                    if (light) {
-                        // Stop the spinning animation
-                        const outerRing = light.querySelector('.circle-outer');
-                        if (outerRing) {
-                            outerRing.style.animation = 'none';
-                        }
-                        
-                        light.classList.add('eliminating');
-                        
-                        // Haptic feedback for elimination
-                        this.vibrate(50);
-                        
-                        await this.sleep(800);
-                        light.remove();
-                        this.lights.delete(touchId);
-                        this.touches.delete(touchId);
-                    }
-                }
-                
-                // Celebrate the winner(s)
-                const winners = shuffled.slice(0, this.playersToSelect);
-                winners.forEach(touchId => {
-                    const light = this.lights.get(touchId);
-                    if (light) {
-                        // Stop spinning and add winner effect
-                        const outerRing = light.querySelector('.circle-outer');
-                        if (outerRing) {
-                            outerRing.style.animation = 'none';
-                        }
-                        light.classList.add('winner');
-                    }
-                });
-                
-                // Winner haptic feedback
-                this.vibrate([200, 100, 200, 100, 400]);
-                
-                this.gameStatus.textContent = 'Winner!';
-                this.gameStatus.classList.add('visible');
-                
-                setTimeout(() => {
-                    this.resetGame();
-                }, 4000);
-            }
-
-            resetGame() {
-                this.gameActive = false;
-                this.eliminating = false;
-                this.hasShownReadyMessage = false;
-                if (this.eliminationTimeout) {
-                    clearTimeout(this.eliminationTimeout);
-                    this.eliminationTimeout = null;
-                }
-                
-                // Clear all lights
-                this.lights.forEach(light => light.remove());
-                this.lights.clear();
-                this.touches.clear();
-                
-                // Show controls again
-                this.controls.classList.remove('hidden');
-                this.gameStatus.classList.remove('visible');
-                this.instructions.style.display = 'block';
-            }
-
-            sleep(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms));
-            }
-
-            vibrate(pattern) {
-                // Check if vibration API is supported
-                if ('vibrate' in navigator) {
-                    navigator.vibrate(pattern);
-                }
-            }
-
-            showMessage(message, duration = 2000) {
-                this.gameStatus.textContent = message;
-                this.gameStatus.classList.add('visible');
-                setTimeout(() => {
-                    this.gameStatus.classList.remove('visible');
-                }, duration);
+        // Haptic feedback helper function
+        function vibrate(duration) {
+            if ('vibrate' in navigator) {
+                navigator.vibrate(duration);
             }
         }
 
-        // Initialize the game when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            new WhoGoesFirstGame();
+        // Create a new touch circle element
+        function createTouchCircle(touch, colorIndex) {
+            const circle = document.createElement('div');
+            circle.className = 'touch-circle';
+            circle.id = `circle-${touch.identifier}`;
+            
+            // Set CSS custom property for color
+            const color = colors[colorIndex % colors.length];
+            circle.style.setProperty('--circle-color', color);
+            
+            // Position the circle
+            circle.style.left = `${touch.clientX}px`;
+            circle.style.top = `${touch.clientY}px`;
+            
+            // Create inner structure
+            circle.innerHTML = `
+                <div class="circle-outer"></div>
+                <div class="circle-inner"></div>
+            `;
+            
+            gameContainer.appendChild(circle);
+            
+            // Haptic feedback for new touch
+            vibrate(30);
+            
+            return circle;
+        }
+
+        // Update circle position during touch move
+        function updateCirclePosition(touch) {
+            const circle = document.getElementById(`circle-${touch.identifier}`);
+            if (circle) {
+                circle.style.left = `${touch.clientX}px`;
+                circle.style.top = `${touch.clientY}px`;
+            }
+        }
+
+        // Remove touch circle
+        function removeTouchCircle(touchId) {
+            const circle = document.getElementById(`circle-${touchId}`);
+            if (circle) {
+                circle.remove();
+            }
+        }
+
+        // Update status message based on game state
+        function updateStatus() {
+            const touchCount = touchPoints.size;
+            
+            switch (gameState) {
+                case 'idle':
+                    if (touchCount === 0) {
+                        statusMessage.textContent = 'Touch the screen with multiple fingers';
+                    } else if (touchCount === 1) {
+                        statusMessage.textContent = 'Add more fingers (need at least 2)';
+                    } else {
+                        statusMessage.textContent = `${touchCount} players ready - lift fingers to start!`;
+                    }
+                    break;
+                case 'active':
+                    statusMessage.textContent = `${touchCount} players - keep fingers down!`;
+                    break;
+                case 'eliminating':
+                    statusMessage.textContent = 'Eliminating players...';
+                    break;
+                case 'winner':
+                    statusMessage.textContent = 'Winner selected! 🎉';
+                    break;
+            }
+        }
+
+        // Start elimination process
+        function startElimination() {
+            if (eliminationInProgress || touchPoints.size < 2) return;
+            
+            eliminationInProgress = true;
+            gameState = 'eliminating';
+            gameContainer.classList.add('eliminating');
+            updateStatus();
+            
+            // Convert touchPoints to array for elimination
+            const players = Array.from(touchPoints.keys());
+            let remainingPlayers = [...players];
+            
+            // Elimination sequence
+            function eliminateNext() {
+                if (remainingPlayers.length <= 1) {
+                    // We have a winner!
+                    if (remainingPlayers.length === 1) {
+                        selectWinner(remainingPlayers[0]);
+                    } else {
+                        // Edge case: all eliminated somehow
+                        resetGame();
+                    }
+                    return;
+                }
+                
+                // Randomly select a player to eliminate
+                const eliminateIndex = Math.floor(Math.random() * remainingPlayers.length);
+                const eliminatedPlayer = remainingPlayers[eliminateIndex];
+                remainingPlayers.splice(eliminateIndex, 1);
+                
+                // Animate elimination
+                const circle = document.getElementById(`circle-${eliminatedPlayer}`);
+                if (circle) {
+                    circle.style.animation = 'eliminate 0.8s ease-in-out forwards';
+                    setTimeout(() => {
+                        circle.remove();
+                    }, 800);
+                }
+                
+                // Haptic feedback for elimination
+                vibrate(50);
+                
+                // Continue elimination after delay
+                setTimeout(eliminateNext, 1200);
+            }
+            
+            // Start elimination sequence after initial delay
+            setTimeout(eliminateNext, 1000);
+        }
+
+        // Select winner and celebrate
+        function selectWinner(winnerId) {
+            gameState = 'winner';
+            gameContainer.classList.remove('eliminating');
+            updateStatus();
+            
+            const winnerCircle = document.getElementById(`circle-${winnerId}`);
+            if (winnerCircle) {
+                winnerCircle.style.animation = 'winner-celebrate 1s ease-in-out infinite';
+                winnerCircle.style.zIndex = '200';
+            }
+            
+            // Winner celebration vibration pattern
+            vibrate([100, 50, 100, 50, 200]);
+            
+            // Auto reset after celebration
+            setTimeout(() => {
+                resetGame();
+            }, 4000);
+        }
+
+        // Reset game to initial state
+        function resetGame() {
+            gameState = 'idle';
+            eliminationInProgress = false;
+            gameContainer.classList.remove('eliminating');
+            
+            // Clear all touch circles
+            touchPoints.clear();
+            const circles = document.querySelectorAll('.touch-circle');
+            circles.forEach(circle => circle.remove());
+            
+            // Clear any existing timers
+            if (eliminationTimer) {
+                clearTimeout(eliminationTimer);
+                eliminationTimer = null;
+            }
+            
+            // Reset instructions visibility
+            instructions.classList.remove('hidden');
+            
+            updateStatus();
+        }
+
+        // Touch event handlers
+        function handleTouchStart(event) {
+            event.preventDefault();
+            
+            if (gameState === 'eliminating' || gameState === 'winner') return;
+            
+            const touches = event.changedTouches;
+            let colorIndex = touchPoints.size;
+            
+            for (let i = 0; i < touches.length; i++) {
+                const touch = touches[i];
+                
+                // Store touch point data
+                touchPoints.set(touch.identifier, {
+                    x: touch.clientX,
+                    y: touch.clientY,
+                    colorIndex: colorIndex
+                });
+                
+                // Create visual circle
+                createTouchCircle(touch, colorIndex);
+                colorIndex++;
+            }
+            
+            gameState = 'active';
+            instructions.classList.add('hidden');
+            updateStatus();
+            
+            // Clear any existing elimination timer
+            if (eliminationTimer) {
+                clearTimeout(eliminationTimer);
+            }
+        }
+
+        function handleTouchMove(event) {
+            event.preventDefault();
+            
+            if (gameState === 'eliminating' || gameState === 'winner') return;
+            
+            const touches = event.changedTouches;
+            
+            for (let i = 0; i < touches.length; i++) {
+                const touch = touches[i];
+                
+                if (touchPoints.has(touch.identifier)) {
+                    // Update touch point data
+                    const touchData = touchPoints.get(touch.identifier);
+                    touchData.x = touch.clientX;
+                    touchData.y = touch.clientY;
+                    
+                    // Update circle position
+                    updateCirclePosition(touch);
+                }
+            }
+        }
+
+        function handleTouchEnd(event) {
+            event.preventDefault();
+            
+            if (gameState === 'eliminating' || gameState === 'winner') return;
+            
+            const touches = event.changedTouches;
+            
+            for (let i = 0; i < touches.length; i++) {
+                const touch = touches[i];
+                
+                if (touchPoints.has(touch.identifier)) {
+                    touchPoints.delete(touch.identifier);
+                    removeTouchCircle(touch.identifier);
+                }
+            }
+            
+            // Check if we should start elimination
+            if (touchPoints.size === 0 && gameState === 'active') {
+                // All fingers lifted - but we need to check if we had enough players
+                const remainingCircles = document.querySelectorAll('.touch-circle');
+                if (remainingCircles.length >= 2) {
+                    // Start elimination with remaining circles
+                    eliminationTimer = setTimeout(() => {
+                        startElimination();
+                    }, 500);
+                } else {
+                    // Not enough players, reset to idle
+                    resetGame();
+                }
+            } else if (touchPoints.size > 0) {
+                updateStatus();
+            }
+        }
+
+        // Add touch event listeners
+        gameContainer.addEventListener('touchstart', handleTouchStart, { passive: false });
+        gameContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+        gameContainer.addEventListener('touchend', handleTouchEnd, { passive: false });
+        gameContainer.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+
+        // Prevent context menu on long press
+        gameContainer.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // Initialize status
+        updateStatus();
+
+        // Add mouse support for desktop testing
+        let mouseDown = false;
+        let mouseId = 'mouse';
+
+        gameContainer.addEventListener('mousedown', (e) => {
+            if (mouseDown) return;
+            mouseDown = true;
+            
+            const fakeTouch = {
+                identifier: mouseId,
+                clientX: e.clientX,
+                clientY: e.clientY
+            };
+            
+            handleTouchStart({ 
+                preventDefault: () => {}, 
+                changedTouches: [fakeTouch] 
+            });
         });
+
+        gameContainer.addEventListener('mousemove', (e) => {
+            if (!mouseDown) return;
+            
+            const fakeTouch = {
+                identifier: mouseId,
+                clientX: e.clientX,
+                clientY: e.clientY
+            };
+            
+            handleTouchMove({ 
+                preventDefault: () => {}, 
+                changedTouches: [fakeTouch] 
+            });
+        });
+
+        gameContainer.addEventListener('mouseup', (e) => {
+            if (!mouseDown) return;
+            mouseDown = false;
+            
+            const fakeTouch = {
+                identifier: mouseId,
+                clientX: e.clientX,
+                clientY: e.clientY
+            };
+            
+            handleTouchEnd({ 
+                preventDefault: () => {}, 
+                changedTouches: [fakeTouch] 
+            });
+        });
+
+        // Prevent scrolling and zooming on mobile
+        document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+        document.addEventListener('gesturestart', (e) => e.preventDefault());
+        document.addEventListener('gesturechange', (e) => e.preventDefault());
+        document.addEventListener('gestureend', (e) => e.preventDefault());
     </script>
 </body>
 </html>
